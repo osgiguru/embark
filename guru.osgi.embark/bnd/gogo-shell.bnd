@@ -1,0 +1,10 @@
+-includeresource: \
+	@${repo; org.apache.felix.gogo.shell;},\
+	motd=resources/motd.txt
+
+Bundle-Name: Apache Felix Gogo Shell (Embark Edition)
+Bundle-Activator: org.apache.felix.gogo.shell.Activator
+Bundle-Version: 1.0.0
+Import-Package: \
+	org.apache.felix.service.command; status=provisional; version=0.10, \
+	*

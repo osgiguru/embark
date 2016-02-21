@@ -1,0 +1,24 @@
+-dependson: guru.osgi.embark.shell
+-buildpath: \
+	osgi.annotation; version=6.0.1, \
+	osgi.core; version=6.0.0,\
+	net.sf.jopt-simple.jopt-simple; version=4.9
+
+#-fixupmessages: "private references"; is:=error
+
+Main-Class: guru.osgi.embark.Main
+
+-privatepackage: guru.osgi.embark
+-conditionalpackage: joptsimple.*
+
+-includeresource: \
+	@${repo; org.apache.felix.framework; 5.2}, \
+	@${repo; org.apache.felix.scr; 2.0.2},\
+	gogo-runtime.jar=${repo; org.apache.felix.gogo.runtime;}, \
+	gogo-command.jar=${repo; org.apache.felix.gogo.command;}, \
+	${repo; guru.osgi.embark.shell;},\
+	framework.properties
+
+-include: framework.properties
+-exportcontents: ${system-packages}
+Provide-Capability: ${system-capabilities}
