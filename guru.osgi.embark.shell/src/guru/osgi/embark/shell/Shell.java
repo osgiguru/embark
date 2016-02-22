@@ -105,7 +105,6 @@ public class Shell {
         registrations.add(context.registerService(Converter.class.getName(), new Converters(context.getBundle(0).getBundleContext()), null));
 
         // register commands
-
         dict.put(CommandProcessor.COMMAND_FUNCTION, new String[] { "format", "getopt", "new", "set", "tac", "type" });
         registrations.add(context.registerService(Builtin.class.getName(), new Builtin(), dict));
 
@@ -114,7 +113,8 @@ public class Shell {
 
         dict.put(CommandProcessor.COMMAND_FUNCTION, new String[] { "cat", "echo", "grep" });
         registrations.add(context.registerService(Posix.class.getName(), new Posix(), dict));
-
+        
+        
         // Setup command history
 		File historyFile = context.getDataFile("history");
 		history = new FileHistory(historyFile);
@@ -135,10 +135,11 @@ public class Shell {
 					}
 
 					console = new ConsoleReader(System.in, System.out, terminal);
-					console.setHandleUserInterrupt(true);
 					console.setHistory(history);
 
 					cmdSession = cmdProc.createSession(console.getInput(), new PrintStream(new WriterOutputStream(console.getOutput())), System.err);
+					setupSession(cmdSession);
+
 					console.addCompleter(new Completer() {
 						@Override
 						public int complete(String buffer, int cursor, List<CharSequence> candidates) {
@@ -162,14 +163,14 @@ public class Shell {
 					printMotd(console);
 					while (!Thread.interrupted()) {
 						// Read a line of input
-						String line;
+						String inputLine;
 						try {
-							line = console.readLine("! ", null);
-							if (line == null) {
+							inputLine = console.readLine("! ", null);
+							if (inputLine == null) {
 								shutdown();
 								return;
 							}
-							if (line.isEmpty())
+							if (inputLine.isEmpty())
 								continue;
 						} catch (UserInterruptException e) {
 							console.println("Use Ctrl-D to exit from Embark OSGi Shell.");
@@ -178,19 +179,20 @@ public class Shell {
 						
 						// Try to execute the command
 						try {
-							Object reply = cmdSession.execute(line);
+							Object reply = cmdSession.execute(inputLine);
 							if (reply != null) {
 								CharSequence replyStr = cmdSession.format(reply, Converter.INSPECT);
-								console.println(replyStr);
+								String[] replyLines = replyStr.toString().split("[\n\r\f]+");
+								for (String replyLine : replyLines) {
+									console.println(replyLine);
+								}
 							}
 						} catch (Exception e) {
 							String message = e.getMessage();
 							console.println(message != null ? message : "<null>");
 						}
 					}
-				} catch (IOException e) {
-					e.printStackTrace();
-				} catch (BundleException e) {
+				} catch (Exception e) {
 					e.printStackTrace();
 				} finally {
 					if (cmdSession != null) cmdSession.close();
@@ -238,6 +240,13 @@ public class Shell {
 			e.printStackTrace();
 		}
 	}
+
+	private void setupSession(CommandSession session) throws Exception {
+        session.execute("addcommand context ${.context}");
+        session.execute("addcommand system (((${.context} bundles) 0) loadclass java.lang.System)");
+        session.execute("e = {$exception printStackTrace}");
+	}
+	
 	
 	private Collection<CommandName> listCommands() {
 		Set<CommandName> commands = new HashSet<>();
